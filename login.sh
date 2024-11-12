@@ -39,6 +39,9 @@ echo "extracted" $cookie
 
 # Get the remote server's IP address
 remote_server_ip=$LAMBDA_SERVER_IP_ADDRESS
+dns_server_ip=$DNS_SERVER # ($ nslookup lambda.compute.cmc.edu)
+
+disconnect_vpn # TODO: skip the vpn connection if i already have one open that works
 
 echo "----------------------------------"
 echo "Initial IP Route:"
@@ -53,16 +56,28 @@ sudo openconnect -vvv --dump -b --user=$USER@cmc.edu \
     --protocol=anyconnect https://vpn.claremontmckenna.edu \
     --os=win --useragent='AnyConnect Windows 4.9.00086' \
     --cookie="$cookie"
-
-# Add route for remote server through VPN
 sleep 2  # Wait for the VPN to finish connecting
-sudo ip route add $remote_server_ip dev tun0 # route traffic to the remote server through the vpn
-sudo resolvectl dns tun0 $DNS_SERVER # set the DNS server ($ nslookup lambda.compute.cmc.edu)
 
 echo "----------------------------------"
-echo "Final IP Route:"
+echo "Configuring IP route:"
 echo "----------------------------------"
+# Add route for remote server through VPN
+sudo ip route add $remote_server_ip dev tun0 # route traffic to the remote server through the vpn
+echo ""
+echo "-- Final IP Route:"
 ip route show
+sleep 2
+echo ""
+
+echo "----------------------------------"
+echo "Configuring DNS:"
+echo "----------------------------------"
+echo "-- Initial DNS:"
+sudo resolvectl # check initial setup (probably wrong)
+echo ""
+sudo resolvectl dns tun0 $dns_server_ip # set the DNS server
+echo "-- Final DNS:"
+sudo resolvectl
 echo ""
 
 echo "----------------------------------"
